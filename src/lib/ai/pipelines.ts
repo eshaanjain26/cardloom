@@ -9,7 +9,7 @@ import {
 } from "../deck/ops";
 import type { Card, Deck } from "../deck/schema";
 import { THEMES } from "../themes";
-import { contentToGenCard, genCardToContent } from "./convert";
+import { contentToGenCard, figureRefs, genCardToContent } from "./convert";
 import type { Complete, Usage } from "./providers";
 import {
   AgentResultSchema,
@@ -85,6 +85,25 @@ export function outlineCardToGen(card: Outline["cards"][number], index: number):
   };
 }
 
+const LAYOUT_GUIDE =
+  'Layouts: "title" for card 1 only; "bullets" for lists; "two-column" for longer cards; "quote" when the card centers on one quotation; "image-left" or "image-right" for a card with an image block; "timeline" for dated events (a bullets block whose items start with a bold date, like **2024** Pilot starts); "steps" for a process (a numbered block, one step per item); "comparison" for two options (a heading block, then for each option a heading block followed by a bullets block); "stats" for key numbers (a bullets block whose items start with a bold number, like **41** visits a night); "blank" otherwise.';
+
+function mediaGuide(req: OutlineRequest): string {
+  const images =
+    req.imageMode === "none"
+      ? "Do not add image blocks."
+      : `Add an image block (with alt text and ref null) to roughly every other card where a picture helps, and give those cards the image-left or image-right layout. ${
+          req.imageMode === "ai"
+            ? "The query is a vivid one-sentence description for an image generator: subject, setting, style. No text in the image."
+            : "The query is 2 to 5 plain words for a free stock photo search."
+        }`;
+  const charts =
+    req.mode === "text"
+      ? "Add a chart block only when the source gives several comparable numbers, and use exactly those numbers."
+      : "Do not add chart blocks.";
+  return `${images} ${charts} Do not add embed blocks.`;
+}
+
 export async function generateCards(
   complete: Complete,
   args: { request: OutlineRequest; outline: Outline; start: number; end: number },
@@ -96,7 +115,7 @@ export async function generateCards(
     .join("\n");
   const res = await complete({
     system: `You write cards for a Cardloom ${request.format}. Each card is one slide or section: a heading plus concise content, under about 70 visible words. Use **bold** sparingly for key terms.`,
-    prompt: `Deck title: ${outline.title}\nFull outline:\n${outlineText}\n\nWrite cards ${start + 1} to ${end}, exactly ${wanted.length} cards, in outline order. Start each card with a heading block. Layouts: "title" for card 1 only, "bullets" for lists, "two-column" for comparisons or longer cards, "quote" when the card centers on one quotation, "blank" otherwise. Add 1 to 3 sentences of speaker notes per card.\n${audienceLines(request)}${request.mode === "text" ? `\nUse only facts from the source. ${TEXT_HANDLING[request.textHandling]}` : `\n${NO_INVENTED_FIGURES}`}${sourceBlock(request)}`,
+    prompt: `Deck title: ${outline.title}\nFull outline:\n${outlineText}\n\nWrite cards ${start + 1} to ${end}, exactly ${wanted.length} cards, in outline order. Start each card with a heading block. ${LAYOUT_GUIDE} ${mediaGuide(request)} Add 1 to 3 sentences of speaker notes per card.\n${audienceLines(request)}${request.mode === "text" ? `\nUse only facts from the source. ${TEXT_HANDLING[request.textHandling]}` : `\n${NO_INVENTED_FIGURES}`}${sourceBlock(request)}`,
     schema: CardsBatchSchema,
   });
   const cards = wanted.map((oc, i) => res.data.cards[i] ?? outlineCardToGen(oc, start + i));
@@ -139,7 +158,7 @@ export async function runAgent(
     .join("\n");
   const res = await complete({
     system:
-      "You edit Cardloom decks for the user. Make the changes they ask for through operations, and answer questions without operations. update_card replaces the whole card, so include every block the card should keep. Use card ids exactly as given. Do not invent facts, numbers, or quotes that are not in the deck or the request.",
+      `You edit Cardloom decks for the user. Make the changes they ask for through operations, and answer questions without operations. update_card replaces the whole card, so include every block the card should keep; keep existing image blocks with their ref unchanged. For a new image use ref null and a 2 to 5 word stock photo query. Use card ids exactly as given. Do not invent facts, numbers, quotes, or chart data that are not in the deck or the request. ${LAYOUT_GUIDE}`,
     prompt: `Available theme ids: ${THEMES.map((t) => t.id).join(", ")}\n\nDeck:\n${JSON.stringify(deckForAgent(deck))}\n${focusCardId ? `\nThe user is asking about card ${focusCardId} unless they say otherwise.\n` : ""}${historyText ? `\nEarlier conversation:\n${historyText}\n` : ""}\nRequest: ${message}\n\nReply in one or two sentences saying what you changed.`,
     schema: AgentResultSchema,
   });
@@ -148,6 +167,7 @@ export async function runAgent(
 
 export function applyAgentOps(deck: Deck, ops: AgentOp[], now: string) {
   const exists = (id: string) => presentSequence(deck).some((s) => s.card.id === id);
+  const refs = figureRefs(presentSequence(deck).map((s) => s.card));
   const skipped: string[] = [];
   let applied = 0;
   for (const op of ops) {
@@ -155,11 +175,11 @@ export function applyAgentOps(deck: Deck, ops: AgentOp[], now: string) {
     switch (op.op) {
       case "update_card":
         if (exists(op.cardId))
-          deck = updateCard(deck, op.cardId, { layout: op.card.layout, content: genCardToContent(op.card), notes: op.card.notes }, now);
+          deck = updateCard(deck, op.cardId, { layout: op.card.layout, content: genCardToContent(op.card, refs), notes: op.card.notes }, now);
         break;
       case "insert_after":
         if (exists(op.afterCardId)) {
-          const card: Card = { ...emptyCard(op.card.layout), content: genCardToContent(op.card), notes: op.card.notes };
+          const card: Card = { ...emptyCard(op.card.layout), content: genCardToContent(op.card, refs), notes: op.card.notes };
           deck = insertCardAfter(deck, op.afterCardId, card, now);
         }
         break;

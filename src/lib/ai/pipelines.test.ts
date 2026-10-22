@@ -84,6 +84,18 @@ describe("generateCards", () => {
     expect(res.cards[1].blocks[0]).toEqual({ type: "heading", text: "Next steps" });
   });
 
+  it("tells the model when to use images and charts", async () => {
+    const { complete, calls } = fakeComplete({ cards: [] });
+    await generateCards(complete, { request, outline, start: 0, end: 1 });
+    await generateCards(complete, { request: { ...request, mode: "text", imageMode: "ai" }, outline, start: 0, end: 1 });
+    await generateCards(complete, { request: { ...request, imageMode: "none" }, outline, start: 0, end: 1 });
+    expect(calls[0].prompt).toContain("stock photo search");
+    expect(calls[0].prompt).toContain("Do not add chart blocks");
+    expect(calls[1].prompt).toContain("image generator");
+    expect(calls[1].prompt).toContain("use exactly those numbers");
+    expect(calls[2].prompt).toContain("Do not add image blocks");
+  });
+
   it("asks for placeholders instead of invented figures in prompt mode only", async () => {
     const { complete, calls } = fakeComplete({ cards: [] });
     await generateCards(complete, { request, outline, start: 0, end: 1 });

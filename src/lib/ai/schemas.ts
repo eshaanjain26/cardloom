@@ -1,11 +1,24 @@
 import { z } from "zod/v4";
 import { DECK_FORMATS } from "../deck/schema";
+import { ChartDataSchema } from "../media/chart";
 
 // Schemas the model fills in. Kept free of length/regex constraints because
 // structured-output JSON schemas reject many of them; limits are enforced after
 // parsing instead.
 
-export const GEN_LAYOUTS = ["blank", "title", "bullets", "two-column", "quote"] as const;
+export const GEN_LAYOUTS = [
+  "blank",
+  "title",
+  "bullets",
+  "two-column",
+  "quote",
+  "image-left",
+  "image-right",
+  "timeline",
+  "steps",
+  "comparison",
+  "stats",
+] as const;
 
 export const GenBlockSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("heading"), text: z.string() }),
@@ -13,6 +26,11 @@ export const GenBlockSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("bullets"), items: z.array(z.string()) }),
   z.object({ type: z.literal("numbered"), items: z.array(z.string()) }),
   z.object({ type: z.literal("quote"), text: z.string() }),
+  // `ref` points at an image already in the deck; new images leave it null and
+  // give a `query` that is searched or generated after the card is written.
+  z.object({ type: z.literal("image"), query: z.string(), alt: z.string(), ref: z.string().nullable() }),
+  z.object({ type: z.literal("chart"), chart: ChartDataSchema }),
+  z.object({ type: z.literal("embed"), url: z.string() }),
 ]);
 export type GenBlock = z.infer<typeof GenBlockSchema>;
 
@@ -57,5 +75,6 @@ export const OutlineRequestSchema = z.object({
   tone: z.string().max(200).default(""),
   audience: z.string().max(200).default(""),
   language: z.string().max(60).default("English"),
+  imageMode: z.enum(["none", "stock", "ai"]).default("stock"),
 });
 export type OutlineRequest = z.infer<typeof OutlineRequestSchema>;

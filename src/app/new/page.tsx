@@ -10,6 +10,8 @@ import { PROVIDER_LABELS } from "@/lib/ai/providers";
 import { MAX_CARDS, MAX_INPUT_CHARS, type GenCard, type Outline, type OutlineRequest } from "@/lib/ai/schemas";
 import { providerConfig } from "@/lib/ai/settings";
 import { browserDeckStore } from "@/lib/deck/browser-store";
+import { hasImageKey, imageSourceFor } from "@/lib/media/client";
+import { pendingImages, resolvePendingImages } from "@/lib/media/resolve";
 import { DECK_FORMATS } from "@/lib/deck/schema";
 import { THEMES } from "@/lib/themes";
 
@@ -32,6 +34,7 @@ export default function NewDeckPage() {
     tone: "",
     audience: "",
     language: "English",
+    imageMode: "stock",
   });
   const [outline, setOutline] = useState<Outline | null>(null);
   const [themeId, setThemeId] = useState("default");
@@ -39,10 +42,13 @@ export default function NewDeckPage() {
   const [error, setError] = useState<string | null>(null);
   const [eventIds, setEventIds] = useState<string[]>([]);
   const [written, setWritten] = useState<GenCard[]>([]);
+  const [imageProgress, setImageProgress] = useState<{ done: number; total: number } | null>(null);
+  const [canGenerateImages, setCanGenerateImages] = useState(false);
 
   useEffect(() => {
     const c = providerConfig(browserAiStore().settings());
     setModelLabel(`${c.model} via ${PROVIDER_LABELS[c.provider]}`);
+    setCanGenerateImages(hasImageKey());
   }, []);
 
   async function makeOutline() {
@@ -75,7 +81,13 @@ export default function NewDeckPage() {
         setWritten([...cards]);
         setEventIds([...ids]);
       }
-      const deck = deckFromGeneration({ title: outline.title, format: req.format, themeId, cards }, new Date().toISOString());
+      let deck = deckFromGeneration({ title: outline.title, format: req.format, themeId, cards }, new Date().toISOString());
+      if (req.imageMode !== "none" && pendingImages(deck).length) {
+        setImageProgress({ done: 0, total: pendingImages(deck).length });
+        ({ deck } = await resolvePendingImages(deck, imageSourceFor(req.imageMode, deck.id), (done, total) =>
+          setImageProgress({ done, total }),
+        ));
+      }
       browserDeckStore().save(deck);
       browserAiStore().assignDeck(ids, deck.id);
       router.push(`/decks/${deck.id}`);
@@ -239,6 +251,17 @@ export default function NewDeckPage() {
             )}
           </div>
 
+          <label className="flex flex-col gap-1 text-sm font-medium sm:w-1/3">
+            Images
+            <select className={field} value={req.imageMode} onChange={(e) => setReq({ ...req, imageMode: e.target.value as OutlineRequest["imageMode"] })}>
+              <option value="stock">Free photos (Openverse)</option>
+              <option value="ai" disabled={!canGenerateImages}>
+                AI-generated{canGenerateImages ? "" : " (needs an OpenAI key)"}
+              </option>
+              <option value="none">None</option>
+            </select>
+          </label>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm font-medium">
               <span>
@@ -365,9 +388,11 @@ export default function NewDeckPage() {
       {step === "writing" && outline && (
         <section aria-live="polite" className="flex flex-col gap-3">
           <p className="text-sm text-neutral-700">
-            {busy
-              ? `Writing cards… ${written.length} of ${outline.cards.length} done`
-              : `Stopped after ${written.length} of ${outline.cards.length} cards.`}
+            {imageProgress && busy
+              ? `Adding images… ${imageProgress.done} of ${imageProgress.total}`
+              : busy
+                ? `Writing cards… ${written.length} of ${outline.cards.length} done`
+                : `Stopped after ${written.length} of ${outline.cards.length} cards.`}
           </p>
           <div className="h-2 overflow-hidden rounded-full bg-neutral-100">
             <div

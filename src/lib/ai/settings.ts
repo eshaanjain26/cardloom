@@ -1,6 +1,7 @@
 import { z } from "zod/v4";
 import type { KeyValue } from "../deck/store";
 import { ImpactSettingsSchema, UsageEventSchema, type UsageEvent } from "./impact";
+import { DEFAULT_IMAGE_MODEL } from "./images";
 import { DEFAULT_MODELS, PROVIDERS, type ProviderConfig, type ProviderId } from "./providers";
 
 const SETTINGS_KEY = "cardloom:ai-settings";
@@ -12,6 +13,7 @@ export const AiSettingsSchema = z.object({
   models: z.partialRecord(z.enum(PROVIDERS), z.string()).default({}),
   keys: z.partialRecord(z.enum(PROVIDERS), z.string()).default({}),
   impact: ImpactSettingsSchema.default(ImpactSettingsSchema.parse({})),
+  imageModel: z.string().default(DEFAULT_IMAGE_MODEL),
 });
 export type AiSettings = z.infer<typeof AiSettingsSchema>;
 
@@ -22,6 +24,11 @@ export function providerConfig(s: AiSettings, provider: ProviderId = s.provider)
     model: s.models[provider]?.trim() || DEFAULT_MODELS[provider],
     ...(key && provider !== "ollama" ? { apiKey: key } : {}),
   };
+}
+
+export function imageConfig(s: AiSettings): ProviderConfig {
+  const key = s.keys.openai?.trim();
+  return { provider: "openai", model: s.imageModel.trim() || DEFAULT_IMAGE_MODEL, ...(key ? { apiKey: key } : {}) };
 }
 
 function readJson(kv: KeyValue, key: string): unknown {

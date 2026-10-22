@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.131.0",
+    "@tiptap/core": "3.31.4",
     "@tiptap/extensions": "3.31.4",
     "@tiptap/html": "3.31.4",
     "@tiptap/pm": "3.31.4",
@@ -30,6 +31,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
+    "fake-indexeddb": "6.2.5",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^3.2.4"

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { generateHTML } from "@tiptap/html";
 import { cardExtensions } from "../editor/extensions";
 import { emptyCard } from "../deck/ops";
-import { contentToGenCard, genCardToContent, inlineToNodes } from "./convert";
+import { contentToGenCard, figureRefs, genCardToContent, inlineToNodes } from "./convert";
 import type { GenCard } from "./schemas";
 
 describe("inlineToNodes", () => {
@@ -64,7 +64,40 @@ describe("contentToGenCard", () => {
     expect(contentToGenCard(card)).toEqual(gen);
   });
 
-  it("maps layouts the model cannot produce to blank", () => {
-    expect(contentToGenCard(emptyCard("timeline", "c")).layout).toBe("blank");
+  it("keeps smart layouts", () => {
+    expect(contentToGenCard(emptyCard("timeline", "c")).layout).toBe("timeline");
+  });
+
+  it("turns new image blocks into pending figures and keeps existing ones by ref", () => {
+    const existing = { src: "https://img.example/a.jpg", alt: "Old", credit: "by X, CC BY", creditUrl: "https://src.example", query: null };
+    const card = { ...emptyCard("image-left", "c"), content: { type: "doc" as const, content: [{ type: "figure", attrs: existing }] } };
+    const gen = contentToGenCard(card);
+    expect(gen.blocks[0]).toEqual({ type: "image", query: "", alt: "Old", ref: "c/img0" });
+
+    const refs = figureRefs([card]);
+    const rewritten = genCardToContent(
+      {
+        layout: "image-left",
+        notes: "",
+        blocks: [
+          { type: "image", query: "", alt: "Better alt", ref: "c/img0" },
+          { type: "image", query: "school roof solar", alt: "Roof", ref: null },
+          { type: "image", query: "", alt: "", ref: "c/img9" },
+        ],
+      },
+      refs,
+    );
+    expect(rewritten.content).toEqual([
+      { type: "figure", attrs: { ...existing, alt: "Better alt" } },
+      { type: "figure", attrs: { src: null, alt: "Roof", credit: "", creditUrl: null, query: "school roof solar" } },
+      { type: "figure", attrs: { src: null, alt: "", credit: "", creditUrl: null, query: "" } },
+    ]);
+  });
+
+  it("round-trips charts and embeds", () => {
+    const chart = { type: "bar" as const, title: "T", labels: ["a"], series: [{ name: "s", values: [1] }] };
+    const gen: GenCard = { layout: "blank", notes: "", blocks: [{ type: "chart", chart }, { type: "embed", url: "https://vimeo.com/1" }] };
+    const card = { ...emptyCard("blank", "c"), content: genCardToContent(gen) };
+    expect(contentToGenCard(card).blocks).toEqual(gen.blocks);
   });
 });

@@ -1,7 +1,7 @@
 import { browserKeyValue } from "../deck/browser-store";
 import { newId } from "../deck/ops";
 import { createAiStore, providerConfig, type AiStore } from "./settings";
-import type { Usage } from "./providers";
+import type { ProviderConfig, Usage } from "./providers";
 
 export const USAGE_EVENT = "cardloom:usage";
 
@@ -21,12 +21,13 @@ export class AiRequestError extends Error {
 }
 
 export async function callAi<T>(
-  task: "ping" | "outline" | "cards" | "agent",
+  task: "ping" | "outline" | "cards" | "agent" | "image",
   payload: Record<string, unknown>,
   deckId: string | null,
+  configOverride?: ProviderConfig,
 ): Promise<{ data: T; eventId: string; model: string }> {
   const ai = browserAiStore();
-  const config = providerConfig(ai.settings());
+  const config = configOverride ?? providerConfig(ai.settings());
   let res: Response;
   try {
     res = await fetch(`/api/ai/${task}`, {

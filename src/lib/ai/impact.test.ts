@@ -43,6 +43,13 @@ describe("estimateImpact", () => {
     expect(i.unpricedModels).toEqual([]);
   });
 
+  it("leaves image generations out of the energy estimate", () => {
+    const i = estimateImpact([ev({ task: "image", provider: "openai", model: "gpt-image-1", inputTokens: 50, outputTokens: 4000 })], settings);
+    expect(i.imageCalls).toBe(1);
+    expect(i.outputTokens).toBe(4000);
+    expect(i.energyWh).toBe(0);
+  });
+
   it("lists models it cannot price", () => {
     const i = estimateImpact([ev({ provider: "openai", model: "gpt-5", inputTokens: 5 }), ev({ provider: "google", model: "g" })], settings);
     expect(i.unpricedModels).toEqual(["g", "gpt-5"]);

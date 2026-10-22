@@ -73,4 +73,22 @@ describe("handleAiTask", () => {
     expect(JSON.stringify(res.body)).not.toContain("secret");
     spy.mockRestore();
   });
+
+  it("generates images through OpenAI only", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () =>
+      new Response(JSON.stringify({ data: [{ b64_json: "AAAA" }], usage: { input_tokens: 20, output_tokens: 1000 } })),
+    );
+    const openai = { provider: "openai", model: "gpt-image-1", apiKey: "sk-o" };
+    const res = await handleAiTask("image", { config: openai, prompt: "Solar panels on a school roof" }, { env: {}, fetch: fetchMock });
+    expect(res).toEqual({
+      status: 200,
+      body: { data: { b64: "AAAA", mime: "image/webp" }, usage: { inputTokens: 20, outputTokens: 1000 }, model: "gpt-image-1" },
+    });
+    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(body).toMatchObject({ model: "gpt-image-1", size: "1536x1024", output_format: "webp" });
+    expect(new Headers(fetchMock.mock.calls[0][1]?.headers).get("authorization")).toBe("Bearer sk-o");
+
+    expect((await handleAiTask("image", { config, prompt: "x" }, { env: {} })).status).toBe(400);
+    expect((await handleAiTask("image", { config: { ...openai, apiKey: undefined }, prompt: "x" }, { env: {} })).status).toBe(401);
+  });
 });

@@ -48,6 +48,9 @@ export function priceFor(provider: ProviderId, model: string, settings: ImpactSe
 
 export type Impact = {
   calls: number;
+  // Image generations count toward tokens and cost but not energy: the per-token
+  // energy factors are for text models.
+  imageCalls: number;
   inputTokens: number;
   outputTokens: number;
   costUsd: number;
@@ -57,7 +60,7 @@ export type Impact = {
 };
 
 export function estimateImpact(events: UsageEvent[], settings: ImpactSettings): Impact {
-  const impact: Impact = { calls: 0, inputTokens: 0, outputTokens: 0, costUsd: 0, unpricedModels: [], energyWh: 0, co2Grams: 0 };
+  const impact: Impact = { calls: 0, imageCalls: 0, inputTokens: 0, outputTokens: 0, costUsd: 0, unpricedModels: [], energyWh: 0, co2Grams: 0 };
   const unpriced = new Set<string>();
   for (const e of events) {
     impact.calls++;
@@ -66,7 +69,8 @@ export function estimateImpact(events: UsageEvent[], settings: ImpactSettings): 
     const price = priceFor(e.provider, e.model, settings);
     if (price) impact.costUsd += (e.inputTokens * price.input + e.outputTokens * price.output) / 1_000_000;
     else unpriced.add(e.model);
-    impact.energyWh += (e.inputTokens * settings.whPer1kInput + e.outputTokens * settings.whPer1kOutput) / 1000;
+    if (e.task === "image") impact.imageCalls++;
+    else impact.energyWh += (e.inputTokens * settings.whPer1kInput + e.outputTokens * settings.whPer1kOutput) / 1000;
   }
   impact.co2Grams = (impact.energyWh / 1000) * settings.gridGramsPerKwh;
   impact.unpricedModels = [...unpriced].sort();

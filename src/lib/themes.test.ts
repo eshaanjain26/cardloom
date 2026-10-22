@@ -22,7 +22,10 @@ describe("themes", () => {
     expect(contrastRatio(accent, surface)).toBeGreaterThanOrEqual(3);
   });
 
-  it("exposes every token as a CSS variable", () => {
-    expect(Object.keys(themeVars(THEMES[0]))).toHaveLength(7);
+  it("exposes every token and four chart colors as CSS variables", () => {
+    const vars = themeVars(THEMES[0]);
+    expect(Object.keys(vars)).toHaveLength(11);
+    expect(vars["--cl-series-1"]).toBe("#2a78d6");
+    expect(themeVars(THEMES.find((t) => t.dark)!)["--cl-series-1"]).toBe("#3987e5");
   });
 });

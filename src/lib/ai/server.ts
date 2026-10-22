@@ -1,5 +1,6 @@
 import { z } from "zod/v4";
 import { DeckSchema } from "../deck/schema";
+import { generateImage, IMAGE_SIZES } from "./images";
 import { CARD_BATCH_SIZE, generateCards, generateOutline, runAgent } from "./pipelines";
 import {
   createComplete,
@@ -45,6 +46,11 @@ const bodies = {
     history: z.array(TurnSchema).max(12).default([]),
     focusCardId: z.string().max(100).optional(),
   }),
+  image: z.object({
+    config: ProviderConfigSchema,
+    prompt: z.string().trim().min(1).max(2000),
+    size: z.enum(IMAGE_SIZES).default("1536x1024"),
+  }),
 };
 
 export type AiTask = keyof typeof bodies;
@@ -59,12 +65,24 @@ export async function handleAiTask(task: string, raw: unknown, deps: Deps): Prom
   if (!parsed.success) return bad(z.prettifyError(parsed.error));
 
   const config = resolveConfig(parsed.data.config, deps.env);
+  if (task === "image") {
+    if (config.provider !== "openai") return bad("Image generation currently supports OpenAI only.");
+    const { prompt, size } = parsed.data as z.infer<typeof bodies.image>;
+    try {
+      const res = await generateImage({ apiKey: config.apiKey, model: config.model, prompt, size }, deps.fetch);
+      return { status: 200, body: { data: { b64: res.b64, mime: res.mime }, usage: res.usage, model: res.model } };
+    } catch (err) {
+      if (err instanceof ProviderError) return bad(err.message, err.status);
+      console.error("[ai:image]", err);
+      return bad("Image generation failed. Check the server log.", 500);
+    }
+  }
   try {
     const complete =
       deps.makeComplete?.(config) ??
       createComplete(config, { fetch: deps.fetch, ollamaBaseUrl: deps.env.OLLAMA_BASE_URL });
 
-    switch (task as AiTask) {
+    switch (task as Exclude<AiTask, "image">) {
       case "ping": {
         const res = await complete({
           system: "Connectivity check.",

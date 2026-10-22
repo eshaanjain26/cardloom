@@ -6,8 +6,10 @@ import { callAi } from "@/lib/ai/client";
 import { applyAgentOps, type ChatTurn } from "@/lib/ai/pipelines";
 import type { AgentResult } from "@/lib/ai/schemas";
 import type { Deck } from "@/lib/deck/schema";
+import { imageSourceFor } from "@/lib/media/client";
+import { pendingImages, resolvePendingImages } from "@/lib/media/resolve";
 
-type Message = ChatTurn & { note?: string; undo?: Deck; error?: boolean };
+type Message = ChatTurn & { note?: string; undo?: Deck; error?: boolean; status?: boolean };
 
 type Props = {
   deck: Deck;
@@ -33,7 +35,7 @@ export function AgentPanel({ deck, focusCardId, focusLabel, onClearFocus, onAppl
   async function send(text: string) {
     const message = text.trim();
     if (!message || busy) return;
-    const history: ChatTurn[] = messages.filter((m) => !m.error).map(({ role, text }) => ({ role, text }));
+    const history: ChatTurn[] = messages.filter((m) => !m.error && !m.status).map(({ role, text }) => ({ role, text }));
     setMessages((m) => [...m, { role: "user", text: message }]);
     setInput("");
     setBusy(true);
@@ -56,6 +58,17 @@ export function AgentPanel({ deck, focusCardId, focusLabel, onClearFocus, onAppl
         ...m.map((x) => ({ ...x, undo: undefined })),
         { role: "assistant", text: res.data.reply, note, undo: applied > 0 ? before : undefined },
       ]);
+      const missing = pendingImages(next).length;
+      if (applied > 0 && missing > 0) {
+        setMessages((m) => [...m, { role: "assistant", text: `Finding ${missing} image${missing === 1 ? "" : "s"}…`, status: true }]);
+        const found = await resolvePendingImages(next, imageSourceFor("stock", next.id));
+        onApply(found.deck);
+        setMessages((m) =>
+          m
+            .filter((x) => !x.status)
+            .concat(found.failed ? [{ role: "assistant" as const, text: `${found.failed} image${found.failed === 1 ? "" : "s"} not found. Use Choose image on the card to pick one.` }] : []),
+        );
+      }
     } catch (err) {
       setMessages((m) => [...m, { role: "assistant", text: err instanceof Error ? err.message : "Request failed", error: true }]);
     } finally {

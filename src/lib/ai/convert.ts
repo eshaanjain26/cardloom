@@ -1,10 +1,17 @@
 import type { Card } from "../deck/schema";
+import type { FigureAttrs } from "../editor/nodes";
+import { ChartDataSchema, normalizeChart } from "../media/chart";
 import type { GenBlock, GenCard } from "./schemas";
 import { GEN_LAYOUTS } from "./schemas";
 
 type Mark = { type: "bold" | "italic" | "code" };
 type TextNode = { type: "text"; text: string; marks?: Mark[] };
 type PMNode = { type: string; attrs?: Record<string, unknown>; content?: PMNode[]; text?: string; marks?: Mark[] };
+
+// Existing images by ref, so an AI rewrite of a card keeps their source and credit.
+export type FigureRefs = Map<string, FigureAttrs>;
+
+export const figureRef = (cardId: string, index: number) => `${cardId}/img${index}`;
 
 const INLINE = /(\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`)/g;
 
@@ -48,8 +55,19 @@ const list = (type: "bulletList" | "orderedList", items: string[]): PMNode => ({
   content: items.map((item) => ({ type: "listItem", content: [paragraph(item)] })),
 });
 
-function blockToNode(block: GenBlock, isFirst: boolean, layout: GenCard["layout"]): PMNode {
+function blockToNode(block: GenBlock, isFirst: boolean, layout: GenCard["layout"], refs?: FigureRefs): PMNode {
   switch (block.type) {
+    case "image": {
+      const known = block.ref ? refs?.get(block.ref) : undefined;
+      const attrs: FigureAttrs = known
+        ? { ...known, alt: block.alt || known.alt }
+        : { src: null, alt: block.alt, credit: "", creditUrl: null, query: block.query.trim().slice(0, 300) || block.alt };
+      return { type: "figure", attrs };
+    }
+    case "chart":
+      return { type: "chart", attrs: { data: normalizeChart(block.chart) } };
+    case "embed":
+      return { type: "embed", attrs: { url: block.url } };
     case "heading":
       return {
         type: "heading",
@@ -67,17 +85,48 @@ function blockToNode(block: GenBlock, isFirst: boolean, layout: GenCard["layout"
   }
 }
 
-export function genCardToContent(card: GenCard): Card["content"] {
-  const content = card.blocks
-    .filter((b) => ("text" in b ? b.text.trim() : b.items.length > 0))
-    .map((b, i) => blockToNode(b, i === 0, card.layout));
+function keepBlock(b: GenBlock): boolean {
+  if ("text" in b) return Boolean(b.text.trim());
+  if ("items" in b) return b.items.length > 0;
+  if (b.type === "image") return Boolean(b.ref || b.query.trim() || b.alt.trim());
+  if (b.type === "embed") return Boolean(b.url.trim());
+  return b.chart.labels.length > 0;
+}
+
+export function genCardToContent(card: GenCard, refs?: FigureRefs): Card["content"] {
+  const content = card.blocks.filter(keepBlock).map((b, i) => blockToNode(b, i === 0, card.layout, refs));
   return { type: "doc", content: content.length ? content : [{ type: "paragraph" }] };
+}
+
+export function figureRefs(cards: Card[]): FigureRefs {
+  const refs: FigureRefs = new Map();
+  for (const card of cards) {
+    let n = 0;
+    for (const node of (card.content.content ?? []) as PMNode[]) {
+      if (node.type === "figure") refs.set(figureRef(card.id, n++), node.attrs as FigureAttrs);
+    }
+  }
+  return refs;
 }
 
 export function contentToGenCard(card: Card): GenCard {
   const blocks: GenBlock[] = [];
+  let images = 0;
   for (const node of (card.content.content ?? []) as PMNode[]) {
     switch (node.type) {
+      case "figure": {
+        const a = node.attrs as FigureAttrs;
+        blocks.push({ type: "image", query: a.query ?? "", alt: a.alt ?? "", ref: figureRef(card.id, images++) });
+        break;
+      }
+      case "chart": {
+        const chart = ChartDataSchema.safeParse(node.attrs?.data);
+        if (chart.success) blocks.push({ type: "chart", chart: chart.data });
+        break;
+      }
+      case "embed":
+        blocks.push({ type: "embed", url: String(node.attrs?.url ?? "") });
+        break;
       case "heading":
         blocks.push({ type: "heading", text: nodesToInline(node.content) });
         break;

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AgentPanel } from "@/components/AgentPanel";
 import { CardEditor } from "@/components/CardEditor";
+import { DeckContext } from "@/components/DeckContext";
 import { ImpactMeter } from "@/components/ImpactMeter";
 import { browserDeckStore } from "@/lib/deck/browser-store";
 import {
@@ -141,9 +142,11 @@ export default function DeckEditorPage() {
           className="min-w-0 flex-1 rounded-2xl p-4 sm:p-8"
           style={{ ...themeVars(theme), background: "var(--cl-bg)" } as React.CSSProperties}
         >
-          {steps.map(({ card, depth }) => (
-            <CardEditor key={`${card.id}-${rev}`} card={card} depth={depth} {...handlers(card)} />
-          ))}
+          <DeckContext.Provider value={{ deckId: deck.id, themeStyle: themeVars(theme) as React.CSSProperties }}>
+            {steps.map(({ card, depth }) => (
+              <CardEditor key={`${card.id}-${rev}`} card={card} depth={depth} {...handlers(card)} />
+            ))}
+          </DeckContext.Provider>
         </div>
       </div>
 
