@@ -4,7 +4,7 @@ Open-source AI builder for presentations, documents, websites, and social carous
 
 Bring your own key for Claude, GPT, Gemini, or OpenRouter. Or run local models through Ollama and keep everything on your machine.
 
-> Status: **M0**. The repo, CI, and deck schema are in place. The editor (M1) and AI generation (M2) come next. See the roadmap below.
+> Status: **M1**. You can write decks in the card editor, pick a theme, and present them. Decks are saved in your browser. AI generation (M2) comes next. See the roadmap below.
 
 ## Quick start
 
@@ -13,7 +13,9 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000.
+Open http://localhost:3000 and choose **Open the editor**.
+
+In present mode: arrow keys, Space, or Page Up/Down to move; Home and End to jump; N for speaker notes; Esc to leave.
 
 | Command | What it does |
 | --- | --- |
@@ -27,7 +29,7 @@ Open http://localhost:3000.
 
 **Core**
 - [x] M0: repo, CI, license, deck and card schema (nested cards, layouts, speaker notes)
-- [ ] M1: card editor (Tiptap), themes, present mode
+- [x] M1: card editor (Tiptap), nested cards, five layouts, six themes checked for WCAG AA contrast, present mode with speaker notes, browser storage
 - [ ] M2: generate from prompt, pasted text, or file; outline step; agent chat for edits; bring-your-own model; token, cost, and CO2 meter per generation
 - [ ] M3: AI and stock images, smart layouts (timeline, steps, comparison, stats), charts, embeds
 - [ ] M4: share links with password and expiry, view analytics, publish as website, PPTX/PDF/PNG/Markdown import and export
@@ -37,7 +39,7 @@ Open http://localhost:3000.
 
 ## Stack
 
-Next.js (App Router), TypeScript, Tailwind, Zod. Planned: Tiptap/ProseMirror, Postgres with Drizzle (SQLite for single-user), Yjs, Vercel AI SDK.
+Next.js (App Router), TypeScript, Tailwind, Zod, Tiptap/ProseMirror. Planned: Postgres with Drizzle (SQLite for single-user), Yjs, Vercel AI SDK.
 
 ## Independence
 
