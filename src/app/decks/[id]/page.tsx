@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { AgentPanel } from "@/components/AgentPanel";
 import { CardEditor } from "@/components/CardEditor";
+import { ImpactMeter } from "@/components/ImpactMeter";
 import { browserDeckStore } from "@/lib/deck/browser-store";
 import {
   addChildCard,
@@ -22,6 +24,11 @@ export default function DeckEditorPage() {
   const { id } = useParams<{ id: string }>();
   const [deck, setDeck] = useState<Deck | null | undefined>(undefined);
   const [saved, setSaved] = useState(true);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [focusCardId, setFocusCardId] = useState<string | null>(null);
+  // Bumped when the deck changes from outside the editors (AI edits, undo) so
+  // each Tiptap instance remounts with the new content.
+  const [rev, setRev] = useState(0);
 
   useEffect(() => setDeck(browserDeckStore().get(id)), [id]);
 
@@ -54,6 +61,7 @@ export default function DeckEditorPage() {
 
   const theme = getTheme(deck.themeId);
   const steps = presentSequence(deck);
+  const focusIndex = steps.findIndex((st) => st.card.id === focusCardId);
 
   const handlers = (card: Card) => ({
     onChange: (patch: Partial<Pick<Card, "content" | "layout" | "notes">>) =>
@@ -62,6 +70,7 @@ export default function DeckEditorPage() {
     onAddChild: () => apply((d, now) => addChildCard(d, card.id, emptyCard(), now)),
     onMove: (dir: -1 | 1) => apply((d, now) => moveCard(d, card.id, dir, now)),
     onRemove: () => apply((d, now) => removeCard(d, card.id, now)),
+    onFocus: () => setFocusCardId(card.id),
   });
 
   return (
@@ -77,6 +86,7 @@ export default function DeckEditorPage() {
           onChange={(e) => apply((d, now) => ({ ...d, title: e.target.value || "Untitled deck", updatedAt: now }))}
           className="min-w-0 flex-1 rounded px-2 py-1 text-base font-medium hover:bg-neutral-100 focus:bg-neutral-100 focus:outline-none"
         />
+        <ImpactMeter deckId={deck.id} className="hidden md:inline-flex" />
         <span className="text-xs text-neutral-500" aria-live="polite">
           {saved ? "Saved" : "Saving…"}
         </span>
@@ -94,6 +104,14 @@ export default function DeckEditorPage() {
             ))}
           </select>
         </label>
+        <button
+          type="button"
+          onClick={() => setAiOpen((o) => !o)}
+          aria-pressed={aiOpen}
+          className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:border-neutral-900"
+        >
+          Ask AI
+        </button>
         <Link
           href={`/decks/${deck.id}/present`}
           className="rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-neutral-700"
@@ -124,10 +142,24 @@ export default function DeckEditorPage() {
           style={{ ...themeVars(theme), background: "var(--cl-bg)" } as React.CSSProperties}
         >
           {steps.map(({ card, depth }) => (
-            <CardEditor key={card.id} card={card} depth={depth} {...handlers(card)} />
+            <CardEditor key={`${card.id}-${rev}`} card={card} depth={depth} {...handlers(card)} />
           ))}
         </div>
       </div>
+
+      {aiOpen && (
+        <AgentPanel
+          deck={deck}
+          focusCardId={focusIndex === -1 ? null : focusCardId}
+          focusLabel={focusIndex === -1 ? null : `Card ${focusIndex + 1}: ${cardLabel(steps[focusIndex].card)}`}
+          onClearFocus={() => setFocusCardId(null)}
+          onApply={(next) => {
+            setDeck(next);
+            setRev((r) => r + 1);
+          }}
+          onClose={() => setAiOpen(false)}
+        />
+      )}
     </div>
   );
 }

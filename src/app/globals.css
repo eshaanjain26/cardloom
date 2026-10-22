@@ -100,6 +100,12 @@ body {
 }
 .cl-layout-title h1 { font-size: 3em; }
 .cl-layout-title p { color: var(--cl-muted); font-size: 1.2em; }
+.cl-layout-title ul,
+.cl-layout-title ol {
+  list-style-position: inside;
+  padding-left: 0;
+}
+.cl-layout-title li > p { display: inline; }
 .cl-layout-two-column .cl-prose,
 .cl-layout-two-column .ProseMirror {
   column-count: 2;

@@ -22,6 +22,7 @@ type Props = {
   onAddChild: () => void;
   onMove: (direction: -1 | 1) => void;
   onRemove: () => void;
+  onFocus?: () => void;
 };
 
 function Toolbar({ editor }: { editor: Editor }) {
@@ -70,7 +71,7 @@ function Toolbar({ editor }: { editor: Editor }) {
   );
 }
 
-export function CardEditor({ card, depth, onChange, onAddAfter, onAddChild, onMove, onRemove }: Props) {
+export function CardEditor({ card, depth, onChange, onAddAfter, onAddChild, onMove, onRemove, onFocus }: Props) {
   const [showNotes, setShowNotes] = useState(card.notes.length > 0);
   const editor = useEditor({
     extensions: cardExtensions,
@@ -88,6 +89,7 @@ export function CardEditor({ card, depth, onChange, onAddAfter, onAddChild, onMo
       aria-label="Card"
       className="group scroll-mt-20"
       style={{ marginLeft: depth * 32 }}
+      onFocus={onFocus}
     >
       {/* Editor chrome stays light on every theme so its controls keep contrast. */}
       <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg bg-white/95 px-2 py-1 shadow-sm">

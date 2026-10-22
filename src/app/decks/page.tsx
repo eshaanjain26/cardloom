@@ -34,20 +34,28 @@ export default function DecksPage() {
           </Link>
           <h1 className="text-3xl font-semibold tracking-tight">Your decks</h1>
         </div>
-        <button
-          type="button"
-          onClick={newDeck}
-          className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
-        >
-          New deck
-        </button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Link href="/settings" className="px-2 text-sm text-neutral-600 hover:text-neutral-900">
+            Settings
+          </Link>
+          <button
+            type="button"
+            onClick={newDeck}
+            className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium hover:border-neutral-900"
+          >
+            Blank deck
+          </button>
+          <Link href="/new" className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700">
+            New with AI
+          </Link>
+        </div>
       </header>
 
       <p className="text-sm text-neutral-500">Decks are saved in this browser only.</p>
 
       {decks === null ? null : decks.length === 0 ? (
         <p className="rounded-xl border border-dashed border-neutral-300 p-8 text-center text-neutral-500">
-          No decks yet. Start one with <strong>New deck</strong>.
+          No decks yet. Start one with <strong>New with AI</strong> or a <strong>Blank deck</strong>.
         </p>
       ) : (
         <ul className="flex flex-col divide-y divide-neutral-200 rounded-xl border border-neutral-200">

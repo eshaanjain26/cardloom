@@ -30,13 +30,15 @@ function mapSiblings(cards: Card[], id: string, fn: (siblings: Card[], index: nu
   if (index !== -1) return fn(cards, index);
   for (let i = 0; i < cards.length; i++) {
     const children = mapSiblings(cards[i].children, id, fn);
+    if (children === cards[i].children) return cards;
     if (children) return cards.map((c, j) => (j === i ? { ...c, children } : c));
   }
   return null;
 }
 
+// Returns the same deck object when nothing changed, so callers can detect no-ops.
 function withCards(deck: Deck, cards: Card[] | null, now: string): Deck {
-  return cards ? { ...deck, cards, updatedAt: now } : deck;
+  return cards && cards !== deck.cards ? { ...deck, cards, updatedAt: now } : deck;
 }
 
 export function updateCard(deck: Deck, id: string, patch: Partial<Omit<Card, "id" | "children">>, now: string): Deck {

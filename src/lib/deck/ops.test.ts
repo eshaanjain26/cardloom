@@ -49,10 +49,11 @@ describe("card operations", () => {
   });
 
   it("moves within siblings and stops at the edges", () => {
-    let d = moveCard(sample(), "b2", -1, t1);
+    const d = moveCard(sample(), "b2", -1, t1);
     expect(ids(d)).toEqual(["0:a", "0:b", "1:b2", "1:b1", "0:c"]);
-    d = moveCard(d, "a", -1, t1);
-    expect(ids(d)[0]).toBe("0:a");
+    const atEdge = moveCard(d, "a", -1, t1);
+    expect(atEdge).toBe(d);
+    expect(moveCard(d, "b1", 1, t1)).toBe(d);
   });
 
   it("updates a nested card without touching others", () => {
