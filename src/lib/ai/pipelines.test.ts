@@ -53,6 +53,7 @@ describe("generateOutline", () => {
     expect(res.usage).toEqual(usage);
     expect(calls[0].prompt).toContain("exactly 3 cards");
     expect(calls[0].prompt).toContain("Solar adoption in cities");
+    expect(calls[0].prompt).toContain("[add figure]");
   });
 
   it("puts pasted text in a source block with a no-invention rule", async () => {
@@ -81,6 +82,15 @@ describe("generateCards", () => {
     expect(res.filled).toBe(1);
     expect(res.cards[0]).toEqual(card("Generated"));
     expect(res.cards[1].blocks[0]).toEqual({ type: "heading", text: "Next steps" });
+  });
+
+  it("asks for placeholders instead of invented figures in prompt mode only", async () => {
+    const { complete, calls } = fakeComplete({ cards: [] });
+    await generateCards(complete, { request, outline, start: 0, end: 1 });
+    await generateCards(complete, { request: { ...request, mode: "text" }, outline, start: 0, end: 1 });
+    expect(calls[0].prompt).toContain("[add figure]");
+    expect(calls[1].prompt).not.toContain("[add figure]");
+    expect(calls[1].prompt).toContain("Use only facts from the source");
   });
 });
 

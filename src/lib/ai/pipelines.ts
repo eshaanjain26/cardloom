@@ -40,6 +40,11 @@ const TEXT_HANDLING: Record<OutlineRequest["textHandling"], string> = {
   expand: "Expand on the source with explanation and examples that follow from it.",
 };
 
+// Prompt mode has no source to check against, so figures the user did not give
+// become visible placeholders instead of plausible-looking guesses.
+const NO_INVENTED_FIGURES =
+  "Do not state statistics, percentages, prices, or dates the user did not give. Describe them in words, or write [add figure] where a number belongs.";
+
 function sourceBlock(req: OutlineRequest): string {
   return req.mode === "text" ? `\n\n<source>\n${req.input}\n</source>` : "";
 }
@@ -47,7 +52,7 @@ function sourceBlock(req: OutlineRequest): string {
 export async function generateOutline(complete: Complete, req: OutlineRequest) {
   const subject =
     req.mode === "prompt"
-      ? `Topic: ${req.input}`
+      ? `${NO_INVENTED_FIGURES}\n\nTopic: ${req.input}`
       : `Build it from the source text below. ${TEXT_HANDLING[req.textHandling]} Keep facts from the source and do not invent numbers, names, or quotes.`;
   const res = await complete({
     system: `You plan ${req.format}s for Cardloom, a card-based presentation and document builder.`,
@@ -91,7 +96,7 @@ export async function generateCards(
     .join("\n");
   const res = await complete({
     system: `You write cards for a Cardloom ${request.format}. Each card is one slide or section: a heading plus concise content, under about 70 visible words. Use **bold** sparingly for key terms.`,
-    prompt: `Deck title: ${outline.title}\nFull outline:\n${outlineText}\n\nWrite cards ${start + 1} to ${end}, exactly ${wanted.length} cards, in outline order. Start each card with a heading block. Layouts: "title" for card 1 only, "bullets" for lists, "two-column" for comparisons or longer cards, "quote" when the card centers on one quotation, "blank" otherwise. Add 1 to 3 sentences of speaker notes per card.\n${audienceLines(request)}${request.mode === "text" ? `\nUse only facts from the source. ${TEXT_HANDLING[request.textHandling]}` : ""}${sourceBlock(request)}`,
+    prompt: `Deck title: ${outline.title}\nFull outline:\n${outlineText}\n\nWrite cards ${start + 1} to ${end}, exactly ${wanted.length} cards, in outline order. Start each card with a heading block. Layouts: "title" for card 1 only, "bullets" for lists, "two-column" for comparisons or longer cards, "quote" when the card centers on one quotation, "blank" otherwise. Add 1 to 3 sentences of speaker notes per card.\n${audienceLines(request)}${request.mode === "text" ? `\nUse only facts from the source. ${TEXT_HANDLING[request.textHandling]}` : `\n${NO_INVENTED_FIGURES}`}${sourceBlock(request)}`,
     schema: CardsBatchSchema,
   });
   const cards = wanted.map((oc, i) => res.data.cards[i] ?? outlineCardToGen(oc, start + i));
