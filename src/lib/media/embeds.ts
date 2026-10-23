@@ -55,11 +55,15 @@ export function safeLinkUrl(raw: string): string | null {
 }
 
 const ASSET = /^asset:[0-9a-f-]{36}$/;
+// Remote images routed through this server's image proxy, used by PNG export.
+const PROXIED = /^\/api\/image-proxy\?url=https%3A%2F%2F[^\s"'<>]+$/;
+const SHARED_ASSET = /^\/api\/shares\/[A-Za-z0-9_-]{12}\/assets\/[0-9a-f-]{36}$/;
 
-// Images may come from https URLs or from this browser's asset store.
+// Images may come from https URLs, this browser's asset store, or a published
+// share's uploaded copies on this server.
 export function safeImageSrc(raw: unknown): string | null {
   if (typeof raw !== "string") return null;
-  if (ASSET.test(raw)) return raw;
+  if (ASSET.test(raw) || SHARED_ASSET.test(raw) || PROXIED.test(raw)) return raw;
   try {
     const url = new URL(raw);
     return url.protocol === "https:" ? url.toString() : null;

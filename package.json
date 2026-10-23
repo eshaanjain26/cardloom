@@ -18,7 +18,11 @@
     "@tiptap/pm": "3.31.4",
     "@tiptap/react": "3.31.4",
     "@tiptap/starter-kit": "3.31.4",
+    "html-to-image": "1.11.13",
+    "jszip": "3.10.2",
     "next": "15.5.4",
+    "pdfjs-dist": "6.4.299",
+    "pptxgenjs": "4.0.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "zod": "^3.25.76"
@@ -32,6 +36,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
     "fake-indexeddb": "6.2.5",
+    "happy-dom": "20.14.6",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^3.2.4"
