@@ -5,11 +5,28 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { browserDeckStore } from "@/lib/deck/browser-store";
 import { createDeck } from "@/lib/deck/ops";
+import { importFile } from "@/lib/io/client";
 import type { DeckSummary } from "@/lib/deck/store";
 
 export default function DecksPage() {
   const router = useRouter();
   const [decks, setDecks] = useState<DeckSummary[] | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  async function onImport(file: File) {
+    setImporting(true);
+    setImportError(null);
+    try {
+      const { deck, warnings } = await importFile(file);
+      browserDeckStore().save(deck);
+      if (warnings.length) window.alert(warnings.join("\n"));
+      router.push(`/decks/${deck.id}`);
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : "Import failed");
+      setImporting(false);
+    }
+  }
 
   useEffect(() => setDecks(browserDeckStore().list()), []);
 
@@ -38,6 +55,20 @@ export default function DecksPage() {
           <Link href="/settings" className="px-2 text-sm text-neutral-600 hover:text-neutral-900">
             Settings
           </Link>
+          <label className="cursor-pointer rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium hover:border-neutral-900">
+            {importing ? "Importing…" : "Import"}
+            <input
+              type="file"
+              accept=".md,.markdown,.txt,.pptx,.pdf"
+              className="sr-only"
+              disabled={importing}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) void onImport(file);
+              }}
+            />
+          </label>
           <button
             type="button"
             onClick={newDeck}
@@ -51,7 +82,12 @@ export default function DecksPage() {
         </div>
       </header>
 
-      <p className="text-sm text-neutral-500">Decks are saved in this browser only.</p>
+      <p className="text-sm text-neutral-500">Decks are saved in this browser only. Import Markdown, PowerPoint (.pptx), or PDF files.</p>
+      {importError && (
+        <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
+          {importError}
+        </p>
+      )}
 
       {decks === null ? null : decks.length === 0 ? (
         <p className="rounded-xl border border-dashed border-neutral-300 p-8 text-center text-neutral-500">

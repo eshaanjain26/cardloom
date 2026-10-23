@@ -7,6 +7,7 @@ import { AgentPanel } from "@/components/AgentPanel";
 import { CardEditor } from "@/components/CardEditor";
 import { DeckContext } from "@/components/DeckContext";
 import { ImpactMeter } from "@/components/ImpactMeter";
+import { ShareDialog } from "@/components/share/ShareDialog";
 import { browserDeckStore } from "@/lib/deck/browser-store";
 import {
   addChildCard,
@@ -26,6 +27,7 @@ export default function DeckEditorPage() {
   const [deck, setDeck] = useState<Deck | null | undefined>(undefined);
   const [saved, setSaved] = useState(true);
   const [aiOpen, setAiOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [focusCardId, setFocusCardId] = useState<string | null>(null);
   // Bumped when the deck changes from outside the editors (AI edits, undo) so
   // each Tiptap instance remounts with the new content.
@@ -107,6 +109,13 @@ export default function DeckEditorPage() {
         </label>
         <button
           type="button"
+          onClick={() => setShareOpen(true)}
+          className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:border-neutral-900"
+        >
+          Share
+        </button>
+        <button
+          type="button"
           onClick={() => setAiOpen((o) => !o)}
           aria-pressed={aiOpen}
           className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:border-neutral-900"
@@ -149,6 +158,8 @@ export default function DeckEditorPage() {
           </DeckContext.Provider>
         </div>
       </div>
+
+      <ShareDialog deck={deck} open={shareOpen} onClose={() => setShareOpen(false)} />
 
       {aiOpen && (
         <AgentPanel

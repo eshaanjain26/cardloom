@@ -322,3 +322,37 @@ body {
   height: 38cqi;
   max-height: none;
 }
+
+/* Print / PDF export: one landscape 16:9 page per card. */
+.cl-print-hint {
+  max-width: 40rem;
+  margin: 1rem auto;
+  font-size: 0.875rem;
+  color: #52525b;
+  text-align: center;
+}
+.cl-print-page {
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+.cl-print-page .cl-stage { width: min(100%, 64rem); }
+@media print {
+  @page { size: 13.333in 7.5in; margin: 0; }
+  html, body { background: var(--cl-bg, #fff) !important; }
+  .cl-print { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .cl-print-hint { display: none; }
+  .cl-print-page {
+    width: 13.333in;
+    height: 7.5in;
+    padding: 0.35in;
+    break-after: page;
+    background: var(--cl-bg);
+  }
+  .cl-print-page:last-child { break-after: auto; }
+  .cl-print-page .cl-stage { width: 100%; height: 100%; aspect-ratio: auto; }
+  .cl-print-page .cl-card-present { box-shadow: none; overflow: hidden; }
+}
+
+/* Exported images show the slide as presented, without scrollbars. */
+.cl-export .cl-card-present { overflow: hidden; }

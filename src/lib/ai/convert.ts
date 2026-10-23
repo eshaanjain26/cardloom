@@ -4,7 +4,7 @@ import { ChartDataSchema, normalizeChart } from "../media/chart";
 import type { GenBlock, GenCard } from "./schemas";
 import { GEN_LAYOUTS } from "./schemas";
 
-type Mark = { type: "bold" | "italic" | "code" };
+type Mark = { type: "bold" | "italic" | "code" } | { type: "link"; attrs: { href: string } };
 type TextNode = { type: "text"; text: string; marks?: Mark[] };
 type PMNode = { type: string; attrs?: Record<string, unknown>; content?: PMNode[]; text?: string; marks?: Mark[] };
 
@@ -13,10 +13,10 @@ export type FigureRefs = Map<string, FigureAttrs>;
 
 export const figureRef = (cardId: string, index: number) => `${cardId}/img${index}`;
 
-const INLINE = /(\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`)/g;
+const INLINE = /(\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`|\[([^\]]+)\]\((https?:\/\/[^\s)]+)\))/g;
 
-// Turns the small inline-markdown subset models emit (**bold**, *italic*,
-// `code`) into ProseMirror text nodes.
+// Turns the small inline-markdown subset models and Markdown imports use
+// (**bold**, *italic*, `code`, [links](https://…)) into ProseMirror text nodes.
 export function inlineToNodes(text: string): TextNode[] {
   const nodes: TextNode[] = [];
   let last = 0;
@@ -25,18 +25,21 @@ export function inlineToNodes(text: string): TextNode[] {
     if (m[2]) nodes.push({ type: "text", text: m[2], marks: [{ type: "bold" }] });
     else if (m[3]) nodes.push({ type: "text", text: m[3], marks: [{ type: "italic" }] });
     else if (m[4]) nodes.push({ type: "text", text: m[4], marks: [{ type: "code" }] });
+    else if (m[5]) nodes.push({ type: "text", text: m[5], marks: [{ type: "link", attrs: { href: m[6] } }] });
     last = m.index + m[0].length;
   }
   if (last < text.length) nodes.push({ type: "text", text: text.slice(last) });
   return nodes.filter((n) => n.text.length > 0);
 }
 
-function nodesToInline(nodes: PMNode[] | undefined): string {
+export function nodesToInline(nodes: PMNode[] | undefined): string {
   return (nodes ?? [])
     .map((n) => {
       if (n.type === "hardBreak") return " ";
       const t = n.text ?? nodesToInline(n.content);
       const marks = (n.marks ?? []).map((m) => m.type);
+      const link = (n.marks ?? []).find((m) => m.type === "link") as { attrs?: { href?: string } } | undefined;
+      if (link?.attrs?.href) return `[${t}](${link.attrs.href})`;
       if (marks.includes("code")) return `\`${t}\``;
       if (marks.includes("bold")) return `**${t}**`;
       if (marks.includes("italic")) return `*${t}*`;
