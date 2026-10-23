@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const formats = [
   { name: "Presentations", body: "Card-based decks with present mode and speaker notes." },
   { name: "Documents", body: "One-pagers to long reports, structured and on-brand." },
@@ -7,8 +9,8 @@ const formats = [
 
 const milestones = [
   { id: "M0", label: "Repo, CI, deck schema", done: true },
-  { id: "M1", label: "Card editor, themes, present mode", done: false },
-  { id: "M2", label: "AI generation, agent chat, bring-your-own model, token and CO2 meter", done: false },
+  { id: "M1", label: "Card editor, themes, present mode", done: true },
+  { id: "M2", label: "AI generation, agent chat, bring-your-own model, token and CO2 meter", done: true },
 ];
 
 export default function Home() {
@@ -23,6 +25,17 @@ export default function Home() {
           Open source. Use your own API key for Claude, GPT, Gemini, or OpenRouter, or run local models through
           Ollama with nothing leaving your machine.
         </p>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/new"
+            className="w-fit rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
+          >
+            Create with AI
+          </Link>
+          <Link href="/decks" className="w-fit rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium hover:border-neutral-900">
+            Your decks
+          </Link>
+        </div>
       </header>
 
       <section aria-labelledby="formats" className="grid gap-4 sm:grid-cols-2">

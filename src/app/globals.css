@@ -24,3 +24,301 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Card surface, themed through --cl-* variables set by themeVars(). */
+.cl-card {
+  background: var(--cl-surface);
+  color: var(--cl-text);
+  font-family: var(--cl-font-body);
+  border-radius: 1rem;
+  padding: clamp(1.25rem, 4vw, 3rem);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 8px 24px rgb(0 0 0 / 0.06);
+}
+.cl-card-editing {
+  min-height: 12rem;
+}
+.cl-card-editing:focus-within {
+  outline: 2px solid var(--cl-accent);
+  outline-offset: 2px;
+}
+
+.cl-prose {
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+.cl-prose > * + * {
+  margin-top: 0.75em;
+}
+.cl-prose h1,
+.cl-prose h2,
+.cl-prose h3 {
+  font-family: var(--cl-font-heading);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+.cl-prose h1 { font-size: 2.25em; }
+.cl-prose h2 { font-size: 1.6em; }
+.cl-prose h3 { font-size: 1.25em; }
+.cl-prose ul { list-style: disc; padding-left: 1.4em; }
+.cl-prose ol { list-style: decimal; padding-left: 1.4em; }
+.cl-prose li::marker { color: var(--cl-accent); }
+.cl-prose li > p { margin: 0; }
+.cl-prose a { color: var(--cl-accent); text-decoration: underline; }
+.cl-prose blockquote {
+  border-left: 3px solid var(--cl-accent);
+  padding-left: 1em;
+  color: var(--cl-muted);
+}
+.cl-prose code {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.9em;
+}
+.cl-prose pre {
+  background: color-mix(in srgb, var(--cl-text) 8%, transparent);
+  border-radius: 0.5rem;
+  padding: 0.75em 1em;
+  overflow-x: auto;
+}
+.cl-prose hr { border-color: var(--cl-muted); opacity: 0.4; }
+.cl-prose p.is-empty:first-child::before,
+.cl-prose .is-empty::before {
+  content: attr(data-placeholder);
+  color: var(--cl-muted);
+  opacity: 0.6;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Layouts */
+.cl-layout-title {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+.cl-layout-title h1 { font-size: 3em; }
+.cl-layout-title p { color: var(--cl-muted); font-size: 1.2em; }
+.cl-layout-title ul,
+.cl-layout-title ol {
+  list-style-position: inside;
+  padding-left: 0;
+}
+.cl-layout-title li > p { display: inline; }
+.cl-layout-two-column .cl-prose,
+.cl-layout-two-column .ProseMirror {
+  column-count: 2;
+  column-gap: 2.5rem;
+}
+.cl-layout-two-column h1,
+.cl-layout-two-column h2 { column-span: all; }
+.cl-card.cl-layout-quote .cl-prose,
+.cl-card.cl-layout-quote .ProseMirror {
+  font-family: var(--cl-font-heading);
+  font-size: 1.6em;
+  font-style: italic;
+  border-left: 4px solid var(--cl-accent);
+  padding-left: 1.25em;
+}
+@media (max-width: 640px) {
+  .cl-layout-two-column .cl-prose,
+  .cl-layout-two-column .ProseMirror { column-count: 1; }
+}
+
+/* Present mode: a 16:9 stage that scales with the viewport. */
+.cl-stage {
+  width: min(100%, calc((100dvh - 6rem) * 16 / 9));
+  aspect-ratio: 16 / 9;
+  container-type: inline-size;
+}
+.cl-card-present {
+  height: 100%;
+  overflow-y: auto;
+  font-size: clamp(0.8rem, 2.2cqi, 1.6rem);
+  padding: 6cqi;
+}
+.cl-card-present .cl-prose { font-size: 1em; }
+
+/* Media */
+.cl-figure { margin: 0; }
+.cl-figure img {
+  display: block;
+  width: 100%;
+  max-height: 28rem;
+  object-fit: cover;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--cl-text) 6%, transparent);
+}
+.cl-figure figcaption {
+  margin-top: 0.35em;
+  font-size: 0.7em;
+  color: var(--cl-muted);
+}
+.cl-figure figcaption a { color: inherit; }
+.cl-figure-pending {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  border: 2px dashed color-mix(in srgb, var(--cl-muted) 50%, transparent);
+  border-radius: 0.75rem;
+  color: var(--cl-muted);
+  font-size: 0.85em;
+  padding: 1rem;
+  text-align: center;
+}
+.cl-chart { margin: 0; }
+.cl-chart-title {
+  font-family: var(--cl-font-heading);
+  font-weight: 600;
+  margin-bottom: 0.5em;
+}
+.cl-chart-svg svg { display: block; max-height: 22rem; }
+.cl-embed iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--cl-text) 6%, transparent);
+}
+.cl-embed-link a { color: var(--cl-accent); text-decoration: underline; word-break: break-all; }
+.ProseMirror-selectednode { outline: 2px solid var(--cl-accent); outline-offset: 4px; border-radius: 0.75rem; }
+
+/* Image beside text: the first image takes one column, everything else the
+   other. In the editor each image sits in a .node-figure wrapper. */
+.cl-layout-image-left :is(.cl-prose, .ProseMirror),
+.cl-layout-image-right :is(.cl-prose, .ProseMirror) {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 2.5rem;
+  align-content: start;
+}
+.cl-layout-image-left :is(.cl-prose, .ProseMirror) > *,
+.cl-layout-image-right :is(.cl-prose, .ProseMirror) > * { margin-top: 0; margin-bottom: 0.75em; grid-column: 2; }
+.cl-layout-image-right :is(.cl-prose, .ProseMirror) > * { grid-column: 1; }
+.cl-layout-image-left :is(.cl-prose, .ProseMirror) > :is(.cl-figure, .node-figure):not(:is(.cl-figure, .node-figure) ~ *) {
+  grid-column: 1;
+  grid-row: 1 / span 20;
+}
+.cl-layout-image-right :is(.cl-prose, .ProseMirror) > :is(.cl-figure, .node-figure):not(:is(.cl-figure, .node-figure) ~ *) {
+  grid-column: 2;
+  grid-row: 1 / span 20;
+}
+.cl-layout-image-left :is(.cl-prose, .ProseMirror) > :is(.cl-figure, .node-figure):not(:is(.cl-figure, .node-figure) ~ *) img,
+.cl-layout-image-right :is(.cl-prose, .ProseMirror) > :is(.cl-figure, .node-figure):not(:is(.cl-figure, .node-figure) ~ *) img {
+  max-height: none;
+  aspect-ratio: 4 / 5;
+}
+
+/* Timeline: list items become points on a line, the bold lead is the date. */
+.cl-layout-timeline :is(ul, ol) {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  border-top: 2px solid color-mix(in srgb, var(--cl-accent) 60%, transparent);
+  padding-top: 1.25rem;
+  margin-top: 1.5em;
+}
+.cl-layout-timeline :is(ul, ol) > li { position: relative; }
+.cl-layout-timeline :is(ul, ol) > li::before {
+  content: "";
+  position: absolute;
+  top: calc(-1.25rem - 7px);
+  left: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--cl-accent);
+  box-shadow: 0 0 0 3px var(--cl-surface);
+}
+.cl-layout-timeline li strong:first-child { display: block; color: var(--cl-accent); }
+
+/* Steps: numbered tiles. */
+.cl-layout-steps :is(ul, ol) {
+  list-style: none;
+  padding: 0;
+  counter-reset: cl-step;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 1rem;
+}
+.cl-layout-steps :is(ul, ol) > li {
+  counter-increment: cl-step;
+  border-radius: 0.75rem;
+  padding: 1em;
+  background: color-mix(in srgb, var(--cl-accent) 8%, transparent);
+}
+.cl-layout-steps :is(ul, ol) > li::before {
+  content: counter(cl-step);
+  display: grid;
+  place-items: center;
+  width: 2em;
+  height: 2em;
+  margin-bottom: 0.5em;
+  border-radius: 999px;
+  background: var(--cl-accent);
+  color: var(--cl-surface);
+  font-weight: 700;
+}
+
+/* Comparison: each subheading starts a column. */
+.cl-layout-comparison :is(.cl-prose, .ProseMirror) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 2rem;
+  align-items: start;
+}
+.cl-layout-comparison :is(.cl-prose, .ProseMirror) > * { grid-column: 1 / -1; }
+.cl-layout-comparison :is(.cl-prose, .ProseMirror) > h3:nth-of-type(1),
+.cl-layout-comparison :is(.cl-prose, .ProseMirror) > h3:nth-of-type(1) + * { grid-column: 1; }
+.cl-layout-comparison :is(.cl-prose, .ProseMirror) > h3:nth-of-type(2),
+.cl-layout-comparison :is(.cl-prose, .ProseMirror) > h3:nth-of-type(2) + * { grid-column: 2; }
+.cl-layout-comparison :is(.cl-prose, .ProseMirror) > h3:nth-of-type(1) { grid-row: 2; }
+.cl-layout-comparison :is(.cl-prose, .ProseMirror) > h3:nth-of-type(1) + * { grid-row: 3; }
+.cl-layout-comparison :is(.cl-prose, .ProseMirror) > h3:nth-of-type(2) { grid-row: 2; }
+.cl-layout-comparison :is(.cl-prose, .ProseMirror) > h3:nth-of-type(2) + * { grid-row: 3; }
+.cl-layout-comparison h3 {
+  border-bottom: 2px solid var(--cl-accent);
+  padding-bottom: 0.3em;
+  margin-top: 0.75em;
+}
+
+/* Stats: the bold lead of each item is the big number. */
+.cl-layout-stats :is(ul, ol) {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 1rem;
+}
+.cl-layout-stats :is(ul, ol) > li { color: var(--cl-muted); }
+.cl-layout-stats li strong:first-child {
+  display: block;
+  font-family: var(--cl-font-heading);
+  font-size: 2.4em;
+  line-height: 1.1;
+  color: var(--cl-text);
+}
+
+@media (max-width: 640px) {
+  .cl-layout-image-left :is(.cl-prose, .ProseMirror),
+  .cl-layout-image-right :is(.cl-prose, .ProseMirror),
+  .cl-layout-comparison :is(.cl-prose, .ProseMirror) { display: block; }
+  .cl-layout-timeline :is(ul, ol) { grid-auto-flow: row; }
+}
+
+/* Keep media inside the 16:9 slide so credits stay visible. */
+.cl-card-present .cl-figure img { max-height: 34cqi; }
+.cl-card-present .cl-chart-svg svg { max-height: 34cqi; }
+.cl-card-present .cl-embed iframe { max-height: 36cqi; }
+.cl-card-present :is(.cl-layout-image-left, .cl-layout-image-right) .cl-prose > .cl-figure:not(.cl-figure ~ *) img,
+.cl-card-present.cl-layout-image-left .cl-prose > .cl-figure:not(.cl-figure ~ *) img,
+.cl-card-present.cl-layout-image-right .cl-prose > .cl-figure:not(.cl-figure ~ *) img {
+  aspect-ratio: auto;
+  height: 38cqi;
+  max-height: none;
+}
