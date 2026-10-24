@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const url = new URL(request.url).searchParams.get("url") ?? "";
   try {
-    const img = await fetchPublicImage(url, { lookup: (h) => lookup(h, { all: true }), fetch });
+    const img = await fetchPublicImage(url, { lookup: (h) => lookup(h, { all: true }) });
     return new NextResponse(new Uint8Array(img.bytes), {
       headers: { "content-type": img.mime, "cache-control": "public, max-age=86400", "x-content-type-options": "nosniff" },
     });
